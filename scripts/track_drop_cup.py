@@ -9,7 +9,7 @@ import moveit_msgs.msg
 import geometry_msgs.msg
 import actionlib
 from moveit_msgs.msg import RobotState
-from aruco_recognition.msg import aruco_pose #importing the message file which recognised Aruco data will be published
+from rxt_aruco_recognition.msg import aruco_pose #importing the message file which recognised Aruco data will be published
 
 
 
@@ -40,18 +40,26 @@ class CartesianPath:
         rospy.loginfo('\033[94m' + " >>> Init done." + '\033[0m')
 
     def aruco_data(self,data):
+        
         for i in range(len(data.ar_id)):
             if 2 in data.ar_id:
-                index = data.ar_id.index(1)
+                index1 = data.ar_id.index(2)
+            if 0 in data.ar_id:
+                index2 = data.ar_id.index(0)
             else:
-                index = len(data.ar_id) + 1
+                index1 = len(data.ar_id) + 1
+                index2 = len(data.ar_id) + 1
 
-        self.ar_id = np.array(data.ar_id)[index] # aruco id of detected marker
-        self.center_x = np.array(data.center_x)[index] # center_x pixel of the detected aruco marker
-        self.center_y = np.array(data.center_y)[index] # center_y pixel of the detected aruco marker
-        self.angle_aruco = np.array(data.theta)[index]
+        self.ar_id = np.array(data.ar_id)[index1] # aruco id of detected marker
+        self.center_x = np.array(data.center_x)[index1] # center_x pixel of the detected aruco marker
+        self.center_y = np.array(data.center_y)[index1] # center_y pixel of the detected aruco marker
+        self.angle_aruco = np.array(data.theta)[index1] # theta/ orientation of the detectected aruco marker
 
-        # print(self.ar_id, self.center_x, self.center_y,self.angle_aruco)
+        self.target_ar_id = np.array(data.ar_id)[index2] # aruco id of detected marker
+        self.target_center_x = np.array(data.center_x)[index2] # center_x pixel of the detected aruco marker
+        self.target_center_y = np.array(data.center_y)[index2] # center_y pixel of the detected aruco marker
+        self.target_angle_aruco = np.array(data.theta)[index2] # theta/ orientation of the detectected aruco marker
+
 
 
 
@@ -100,6 +108,17 @@ class CartesianPath:
         # 6. Make the arm follow the Computed Cartesian Path
         self._group.execute(plan)
 
+    def hard_ee_cartesian_translation(self, trans_x, trans_y, trans_z, arg_max_attempts):
+        """hard cartesian performes n number of attempts to reach the traget pose"""
+
+        number_attempts = 0
+        flag_success = False
+
+        while ((number_attempts <= arg_max_attempts) and  (flag_success is False)):
+            number_attempts += 1
+            flag_success = self.ee_cartesian_translation(trans_x, trans_y, trans_z)
+            rospy.logwarn("attempts: {}".format(number_attempts))
+
 
 
     
@@ -130,6 +149,22 @@ class CartesianPath:
 
 
 
+    def tracking(self):
+        if self.center_x < self.target_center_x:
+            position_x_cartesian =  -1 * abs((self.center_x) - (self.target_center_x)) * 0.001262626
+        if self.center_x > self.target_center_x:
+            position_x_cartesian = abs((self.center_x) - (self.target_center_x)) *  0.001262626
+        if self.center_y < self.target_center_y:
+            position_y_cartesian = abs((self.center_y) - (self.target_center_y)) * 0.001407407
+        if self.center_y > self.target_center_y:
+            position_y_cartesian = -1 * abs((self.center_y) - (self.target_center_y)) * 0.00135017
+
+        print("fefefe",position_x_cartesian,position_y_cartesian)
+
+        self.hard_ee_cartesian_translation(position_y_cartesian,position_x_cartesian,0,5)
+
+
+
     # Destructor
     def __del__(self):
         moveit_commander.roscpp_shutdown()
@@ -140,8 +175,9 @@ class CartesianPath:
 
 def main():
     panda = CartesianPath()
+    rospy.sleep(1)
     while not rospy.is_shutdown():
-        panda.ee_cartesian_translation(-0.1, 0.2,0)
+        panda.tracking()
         break
     del panda
 
