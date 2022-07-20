@@ -48,6 +48,8 @@ class panda_moveit:
         list_joint_values = self._group.get_current_joint_values()
         rospy.loginfo('\033[94m' + ">>> Current Joint Values:" + '\033[0m')
         rospy.loginfo(list_joint_values)
+        self._group.set_max_velocity_scaling_factor(0.25)
+        self._group.set_max_acceleration_scaling_factor(0.25)
 
         self._group.set_joint_value_target(arg_list_joint_angles)
         self._group.plan()
@@ -82,13 +84,21 @@ def main():
 
     panda = panda_moveit()
 
-    lst_joint_angles = [math.radians(54.7366435847),
-                          math.radians(56.9850825709),
-                          math.radians(-54.2071419433),
-                          math.radians(-111.041433312),
-                          math.radians( -162.19399246),
-                          math.radians(130.798313398),
-                          math.radians(78.7803829646 )]
+    lst_joint_angles = [math.radians(-40.0837883365),
+                          math.radians(-36.4071977201),
+                          math.radians(41.3337358411),
+                          math.radians(-131.774625362),
+                          math.radians(144.446053503),
+                          math.radians(160.085656335),
+                          math.radians(101.874760213)]
+
+    lst_joint_angles2 = [math.radians(-41.6829624661),
+                          math.radians(86.1654108185),
+                          math.radians(60.8002130208),
+                          math.radians(-75.6488656657),
+                          math.radians(152.747238216),
+                          math.radians(139.944847257),
+                          math.radians(3.62243936836)]
 
 
 
@@ -96,6 +106,8 @@ def main():
 
         panda.set_joint_angles(lst_joint_angles)
         rospy.sleep(2)
+        # panda.set_joint_angles(lst_joint_angles2)
+        # rospy.sleep(2)
         break
 
     del panda

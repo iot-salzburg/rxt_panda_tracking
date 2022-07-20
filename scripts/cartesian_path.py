@@ -9,10 +9,12 @@ import moveit_msgs.msg
 import geometry_msgs.msg
 import actionlib
 from moveit_msgs.msg import RobotState
+from rxt_aruco_recognition.msg import aruco_pose #importing the message file which recognised Aruco data will be published
 from moveit_msgs.msg import RobotTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 from geometry_msgs.msg import PoseStamped, Pose
-from rxt_aruco_recognition.msg import aruco_pose #importing the message file which recognised Aruco data will be published
+
+
 
 
 
@@ -39,6 +41,7 @@ class CartesianPath:
         self._planning_frame = self._group.get_planning_frame()
         self._eef_link = self._group.get_end_effector_link()
         self._group_names = self._robot.get_group_names()
+        
 
         rospy.loginfo('\033[94m' + " >>> Init done." + '\033[0m')
 
@@ -63,9 +66,7 @@ class CartesianPath:
         self.target_center_y = np.array(data.center_y)[index2] # center_y pixel of the detected aruco marker
         self.target_angle_aruco = np.array(data.theta)[index2] # theta/ orientation of the detectected aruco marker
 
-
     def scale_cartesian_speed(self,traj,scale):
-        # ref : https://groups.google.com/g/moveit-users/c/7n45S8DUjys
         new_traj = RobotTrajectory()
 
         # Initialize the new trajectory to be the same as the planned trajectory
@@ -103,9 +104,13 @@ class CartesianPath:
 
 
 
+
     def ee_cartesian_translation(self, trans_x, trans_y, trans_z):
         moveit_robot_state = RobotState()
-
+        # self._group.set_max_velocity_scaling_factor(0.25)
+        # self._group.set_max_acceleration_scaling_factor(0.25)
+        # self._group.set_goal_orientation_tolerance(0.5)
+        # self._group.set_goal_position_tolerance(0.05)
 
         # 1. Create a empty list to hold waypoints
         waypoints = []
@@ -128,12 +133,16 @@ class CartesianPath:
         # 4. Add the new waypoint to the list of waypoints
         waypoints.append(copy.deepcopy(wpose))
 
+
         # 5. Compute Cartesian Path connecting the waypoints in the list of waypoints
         (plan, fraction) = self._group.compute_cartesian_path(
             waypoints,   # waypoints to follow
             0.01,        # Step Size, distance between two adjacent computed waypoints will be 1 cm
             0.0)         # Jump Threshold
         rospy.loginfo("Path computed successfully. Moving the arm.")
+
+        plan2 = self.scale_cartesian_speed(plan,0.4)
+
 
         # The reason for deleting the first two waypoints from the computed Cartisian Path can be found here,
         # https://answers.ros.org/question/253004/moveit-problem-error-trajectory-message-contains-waypoints-that-are-not-strictly-increasing-in-time/?answer=257488#post-id-257488
@@ -143,9 +152,9 @@ class CartesianPath:
         #     del plan.joint_trajectory.points[1]
 
         # 6. Make the arm follow the Computed Cartesian Path
-
-        plan2 = self.scale_cartesian_speed(plan,0.4)
-
+        
+        # self._group.set_goal_orientation_tolerance(0.5)
+        # self._group.set_goal_position_tolerance(0.05)
         self._group.execute(plan2)
 
     def hard_ee_cartesian_translation(self, trans_x, trans_y, trans_z, arg_max_attempts):
@@ -189,19 +198,6 @@ class CartesianPath:
 
 
 
-    def tracking(self):
-        if self.center_x < self.target_center_x:
-            position_x_cartesian =  -1 * abs((self.center_x) - (self.target_center_x)) * 0.001262626
-        if self.center_x > self.target_center_x:
-            position_x_cartesian = abs((self.center_x) - (self.target_center_x)) *  0.001262626
-        if self.center_y < self.target_center_y:
-            position_y_cartesian = abs((self.center_y) - (self.target_center_y)) * 0.001407407
-        if self.center_y > self.target_center_y:
-            position_y_cartesian = -1 * abs((self.center_y) - (self.target_center_y)) * 0.00135017
-
-        self.hard_ee_cartesian_translation(position_y_cartesian,position_x_cartesian,0,5)
-
-
 
     # Destructor
     def __del__(self):
@@ -215,8 +211,9 @@ def main():
     panda = CartesianPath()
     rospy.sleep(1)
     while not rospy.is_shutdown():
-        panda.tracking()
+        panda.hard_ee_cartesian_translation(0,0.1,0,5)
         break
+        
     del panda
 
 
