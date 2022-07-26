@@ -48,8 +48,8 @@ class panda_moveit:
         list_joint_values = self._group.get_current_joint_values()
         rospy.loginfo('\033[94m' + ">>> Current Joint Values:" + '\033[0m')
         rospy.loginfo(list_joint_values)
-        self._group.set_max_velocity_scaling_factor(0.25)
-        self._group.set_max_acceleration_scaling_factor(0.25)
+        self._group.set_max_velocity_scaling_factor(0.2)
+        self._group.set_max_acceleration_scaling_factor(0.2)
 
         self._group.set_joint_value_target(arg_list_joint_angles)
         self._group.plan()
@@ -100,14 +100,24 @@ def main():
                           math.radians(139.944847257),
                           math.radians(3.62243936836)]
 
+    lst_joint_angles3 = [math.radians(-50.7436963447),
+                          math.radians(82.1585619575),
+                          math.radians(64.109976601),
+                          math.radians(-85.6150366158),
+                          math.radians(154.645142514),
+                          math.radians(137.785189597),
+                          math.radians(0.0288987514792)]
+
 
 
     while not rospy.is_shutdown():
 
-        panda.set_joint_angles(lst_joint_angles)
-        rospy.sleep(2)
+        # panda.set_joint_angles(lst_joint_angles)
+        # rospy.sleep(2)
         # panda.set_joint_angles(lst_joint_angles2)
         # rospy.sleep(2)
+        panda.set_joint_angles(lst_joint_angles3)
+        rospy.sleep(2)
         break
 
     del panda

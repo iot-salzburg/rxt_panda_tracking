@@ -12,7 +12,6 @@ from moveit_msgs.msg import RobotState
 from moveit_msgs.msg import RobotTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 from geometry_msgs.msg import PoseStamped, Pose
-import math
 from rxt_aruco_recognition.msg import aruco_pose #importing the message file which recognised Aruco data will be published
 
 
@@ -48,8 +47,8 @@ class CartesianPath:
         for i in range(len(data.ar_id)):
             if 2 in data.ar_id:
                 index1 = data.ar_id.index(2)
-            if 1 in data.ar_id:
-                index2 = data.ar_id.index(1)
+            if 0 in data.ar_id:
+                index2 = data.ar_id.index(0)
             else:
                 index1 = len(data.ar_id) + 1
                 index2 = len(data.ar_id) + 1
@@ -136,10 +135,16 @@ class CartesianPath:
             0.0)         # Jump Threshold
         rospy.loginfo("Path computed successfully. Moving the arm.")
 
+        # The reason for deleting the first two waypoints from the computed Cartisian Path can be found here,
+        # https://answers.ros.org/question/253004/moveit-problem-error-trajectory-message-contains-waypoints-that-are-not-strictly-increasing-in-time/?answer=257488#post-id-257488
+        # num_pts = len(plan.joint_trajectory.points)
+        # if (num_pts >= 3):
+        #     del plan.joint_trajectory.points[0]
+        #     del plan.joint_trajectory.points[1]
 
         # 6. Make the arm follow the Computed Cartesian Path
 
-        plan2 = self.scale_cartesian_speed(plan,0.3)
+        plan2 = self.scale_cartesian_speed(plan,0.4)
 
         self._group.execute(plan2)
 
@@ -155,6 +160,8 @@ class CartesianPath:
             rospy.logwarn("attempts: {}".format(number_attempts))
 
 
+
+    
     def go_to_pose(self, arg_pose):
 
         pose_values = self._group.get_current_pose().pose
@@ -182,77 +189,18 @@ class CartesianPath:
 
 
 
-    def tracking(self, cup_num):
-        rospy.sleep(1)
-        if cup_num == 1:
+    def tracking(self):
+        if self.center_x < self.target_center_x:
+            position_x_cartesian =  -1 * abs((self.center_x) - (self.target_center_x)) * 0.001262626
+        if self.center_x > self.target_center_x:
+            position_x_cartesian = abs((self.center_x) - (self.target_center_x)) *  0.001262626
+        if self.center_y < self.target_center_y:
+            position_y_cartesian = abs((self.center_y) - (self.target_center_y)) * 0.001407407
+        if self.center_y > self.target_center_y:
+            position_y_cartesian = -1 * abs((self.center_y) - (self.target_center_y)) * 0.00135017
 
-            if self.center_x < self.target_center_x:
-                position_x_cartesian =  -1 * abs((self.center_x) - (self.target_center_x-90)) * 0.001262626
-            if self.center_x > self.target_center_x:
-                position_x_cartesian = abs((self.center_x) - (self.target_center_x-90)) *  0.001262626
-            if self.center_y < self.target_center_y:
-                position_y_cartesian = (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
-            if self.center_y > self.target_center_y:
-                position_y_cartesian = -1 * (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
+        self.hard_ee_cartesian_translation(position_y_cartesian,position_x_cartesian,0,5)
 
-            self.hard_ee_cartesian_translation(position_y_cartesian,position_x_cartesian,0,5)
-
-
-        if cup_num == 2:
-            if self.center_x < self.target_center_x:
-                position_x_cartesian =  -1 * abs((self.center_x) - (self.target_center_x)) * 0.001262626
-            if self.center_x > self.target_center_x:
-                position_x_cartesian = abs((self.center_x) - (self.target_center_x)) *  0.001262626
-            if self.center_y < self.target_center_y:
-                    position_y_cartesian = (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
-            if self.center_y > self.target_center_y:
-                position_y_cartesian = -1 * (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
-
-            self.hard_ee_cartesian_translation(position_y_cartesian,position_x_cartesian,0,5)
-
-
-        if cup_num == 3:
-            for i in range(2):
-                if self.center_x < self.target_center_x:
-                    position_x_cartesian =  -1 * abs((self.center_x) - (self.target_center_x+100)) * 0.001262626
-                if self.center_x > self.target_center_x:
-                    position_x_cartesian = abs((self.center_x) - (self.target_center_x+100)) *  0.001262626
-                if self.center_y < self.target_center_y:
-                    position_y_cartesian = (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
-                if self.center_y > self.target_center_y:
-                    position_y_cartesian = -1 * (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
-
-                self.hard_ee_cartesian_translation(position_y_cartesian,position_x_cartesian,0,5)
-
-    def set_joint_angles(self, arg_list_joint_angles):
-
-        list_joint_values = self._group.get_current_joint_values()
-        rospy.loginfo('\033[94m' + ">>> Current Joint Values:" + '\033[0m')
-        rospy.loginfo(list_joint_values)
-        self._group.set_max_velocity_scaling_factor(0.2)
-        self._group.set_max_acceleration_scaling_factor(0.2)
-
-        self._group.set_joint_value_target(arg_list_joint_angles)
-        self._group.plan()
-        flag_plan = self._group.go(wait=True)
-
-        list_joint_values = self._group.get_current_joint_values()
-        rospy.loginfo('\033[94m' + ">>> Final Joint Values:" + '\033[0m')
-        rospy.loginfo(list_joint_values)
-
-        pose_values = self._group.get_current_pose().pose
-        rospy.loginfo('\033[94m' + ">>> Final Pose:" + '\033[0m')
-        rospy.loginfo(pose_values)
-
-        if (flag_plan == True):
-            rospy.loginfo(
-                '\033[94m' + ">>> set_joint_angles() Success" + '\033[0m')
-        else:
-            rospy.logerr(
-                '\033[94m' + ">>> set_joint_angles() Failed." + '\033[0m')
-
-        return flag_plan
-                
 
 
     # Destructor
@@ -265,18 +213,9 @@ class CartesianPath:
 
 def main():
     panda = CartesianPath()
-    lst_joint_angles3 = [math.radians(-50.7436963447),
-                          math.radians(82.1585619575),
-                          math.radians(64.109976601),
-                          math.radians(-85.6150366158),
-                          math.radians(154.645142514),
-                          math.radians(137.785189597),
-                          math.radians(0.0288987514792)]
     rospy.sleep(1)
     while not rospy.is_shutdown():
-        panda.set_joint_angles(lst_joint_angles3)
-        panda.tracking(3)
-        panda.set_joint_angles(lst_joint_angles3)
+        panda.tracking()
         break
     del panda
 
