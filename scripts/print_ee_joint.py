@@ -83,6 +83,30 @@ class panda_moveit:
                       "joint_7: {}\n".format(math.degrees(list_joint_values[6])) +
                       '\033[0m')
 
+        rospy.loginfo('\033[94m' + "\nJoint Values  in radian: \n\n" +
+        "{\n"+
+                    str((list_joint_values[0])) + ",  // Joint 1\n"+
+                    str((list_joint_values[1])) + ",  // Joint 2\n"+
+                    str((list_joint_values[2])) + ",  // Joint 3\n"+
+                    str((list_joint_values[3])) + ",  // Joint 4\n"+
+                    str((list_joint_values[4])) + ",  // Joint 5\n"+
+                    str((list_joint_values[5])) + ",  // Joint 6\n"+
+                    str((list_joint_values[6])) + "   // Joint 7\n"+
+                    "};"+
+                      '\033[0m')
+
+        rospy.loginfo('\033[94m' + "\nJoint Values  in radian: \n\n" +
+        "["+
+                    str((list_joint_values[0])) + ", "+
+                    str((list_joint_values[1])) + ", "+
+                    str((list_joint_values[2])) + ", "+
+                    str((list_joint_values[3])) + ", "+
+                    str((list_joint_values[4])) + ", "+
+                    str((list_joint_values[5])) + ", "+
+                    str((list_joint_values[6])) + 
+                    "]"+
+                      '\033[0m')
+
     # Destructor
 
     def __del__(self):

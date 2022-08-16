@@ -1,5 +1,9 @@
 #! /usr/bin/env python2
 
+"""
+This script is used to move the franka panda in cartesian path
+"""
+
 import rospy
 import sys
 import copy
@@ -170,6 +174,7 @@ class CartesianPath:
 
 
 
+
     
     def go_to_pose(self, arg_pose):
 
@@ -211,7 +216,8 @@ def main():
     panda = CartesianPath()
     rospy.sleep(1)
     while not rospy.is_shutdown():
-        panda.hard_ee_cartesian_translation(0,0.1,0,5)
+        # panda.hard_ee_cartesian_translation(0,0.1,0,5)
+        panda.go_to_pose_goal()
         break
         
     del panda

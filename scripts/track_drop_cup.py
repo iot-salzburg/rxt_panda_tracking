@@ -13,6 +13,7 @@ from moveit_msgs.msg import RobotTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 from geometry_msgs.msg import PoseStamped, Pose
 import math
+from franka_gripper.msg import MoveActionGoal
 from rxt_aruco_recognition.msg import aruco_pose #importing the message file which recognised Aruco data will be published
 
 
@@ -44,6 +45,7 @@ class CartesianPath:
         rospy.loginfo('\033[94m' + " >>> Init done." + '\033[0m')
 
     def aruco_data(self,data):
+        # rospy.sleep(0.1)
         
         for i in range(len(data.ar_id)):
             if 2 in data.ar_id:
@@ -183,7 +185,7 @@ class CartesianPath:
 
 
     def tracking(self, cup_num):
-        rospy.sleep(1)
+        rospy.sleep(2)
         if cup_num == 1:
 
             if self.center_x < self.target_center_x:
@@ -195,12 +197,15 @@ class CartesianPath:
             if self.center_y > self.target_center_y:
                 position_y_cartesian = -1 * (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
 
+            if position_x_cartesian < 0:
+                position_x_cartesian = -1*position_x_cartesian
+
             self.hard_ee_cartesian_translation(position_y_cartesian,position_x_cartesian,0,5)
 
 
         if cup_num == 2:
             if self.center_x < self.target_center_x:
-                position_x_cartesian =  -1 * abs((self.center_x) - (self.target_center_x)) * 0.001262626
+                position_x_cartesian =  -1 * abs((self.center_x+15) - (self.target_center_x)) * 0.001262626
             if self.center_x > self.target_center_x:
                 position_x_cartesian = abs((self.center_x) - (self.target_center_x)) *  0.001262626
             if self.center_y < self.target_center_y:
@@ -221,8 +226,22 @@ class CartesianPath:
                     position_y_cartesian = (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
                 if self.center_y > self.target_center_y:
                     position_y_cartesian = -1 * (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
+                if i == 1 and position_x_cartesian > 0.01:
+                    position_x_cartesian = -1*position_x_cartesian
 
                 self.hard_ee_cartesian_translation(position_y_cartesian,position_x_cartesian,0,5)
+
+        self.hard_ee_cartesian_translation(0,0,-0.07,5)
+
+    def gripper_action(self):
+        pub2 = rospy.Publisher("/franka_gripper/move/goal",MoveActionGoal,queue_size=10)
+        rospy.sleep(0.2)
+        gripper_var = MoveActionGoal()
+        gripper_var.header.seq = 0
+        gripper_var.goal.width = 0.1
+        gripper_var.goal.speed = 0.1
+        rospy.sleep(0.2)
+        pub2.publish(gripper_var)
 
     def set_joint_angles(self, arg_list_joint_angles):
 
@@ -263,23 +282,27 @@ class CartesianPath:
 
 
 
-def main():
+def main(cup_pose):
     panda = CartesianPath()
-    lst_joint_angles3 = [math.radians(-50.7436963447),
-                          math.radians(82.1585619575),
-                          math.radians(64.109976601),
-                          math.radians(-85.6150366158),
-                          math.radians(154.645142514),
-                          math.radians(137.785189597),
-                          math.radians(0.0288987514792)]
+    lst_joint_angles = [-1.26723479969, -0.760023136918, 1.12203699769, -2.01352979907, 2.46307797882, 2.78012048767, 2.16994647631]
+
+
+    lst_joint_angles2 = [-0.892661764645, 1.42181484892, 1.1265010769, -1.50818255877, 2.71670071898, 2.41086199864, -0.0106563634393]
+
+    
     rospy.sleep(1)
     while not rospy.is_shutdown():
-        panda.set_joint_angles(lst_joint_angles3)
-        panda.tracking(3)
-        panda.set_joint_angles(lst_joint_angles3)
+        panda.set_joint_angles(lst_joint_angles)
+        panda.set_joint_angles(lst_joint_angles2)
+        panda.tracking(int(cup_pose))
+        panda.gripper_action()
+        rospy.sleep(4)
+        panda.hard_ee_cartesian_translation(0,0,0.07,5)
+        panda.set_joint_angles(lst_joint_angles2)
+        panda.set_joint_angles(lst_joint_angles)
         break
     del panda
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1])

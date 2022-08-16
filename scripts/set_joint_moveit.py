@@ -50,6 +50,8 @@ class panda_moveit:
         rospy.loginfo(list_joint_values)
         self._group.set_max_velocity_scaling_factor(0.2)
         self._group.set_max_acceleration_scaling_factor(0.2)
+        self._group.set_goal_position_tolerance(10)
+        self._group.set_goal_orientation_tolerance(10)
 
         self._group.set_joint_value_target(arg_list_joint_angles)
         self._group.plan()
@@ -72,6 +74,12 @@ class panda_moveit:
 
         return flag_plan
 
+    def set_joint_angles2(self):
+        list_joint_values = self._group.get_current_joint_values()
+        list_joint_values[6] = list_joint_values[6] - 3.14159
+        self.set_joint_angles(list_joint_values)
+        return True
+
     # Destructor
 
     def __del__(self):
@@ -92,32 +100,30 @@ def main():
                           math.radians(160.085656335),
                           math.radians(101.874760213)]
 
-    lst_joint_angles2 = [math.radians(-41.6829624661),
-                          math.radians(86.1654108185),
-                          math.radians(60.8002130208),
-                          math.radians(-75.6488656657),
-                          math.radians(152.747238216),
-                          math.radians(139.944847257),
-                          math.radians(3.62243936836)]
+    
 
-    lst_joint_angles3 = [math.radians(-50.7436963447),
-                          math.radians(82.1585619575),
-                          math.radians(64.109976601),
-                          math.radians(-85.6150366158),
-                          math.radians(154.645142514),
-                          math.radians(137.785189597),
-                          math.radians(0.0288987514792)]
+
+    
+
+    
+    lst_joint_angles1 = [-2.10487496453, -1.08952988331, -0.128724902482, -2.5020268644, 1.10386924876, 2.59814835606, 2.72855164111]
+
+    lst_joint_angles2 = [-2.12989212618, -0.315124112542, -0.390308081519, -2.6037152449, 1.94523100666, 2.12424094467, 1.41917996051]
+
+    lst_joint_angles3 = [-2.01488530487, -0.00452550545346, -0.328690348709, -2.30402307034, 2.04269225217, 2.08763738966, 1.44880202791]
 
 
 
     while not rospy.is_shutdown():
 
-        # panda.set_joint_angles(lst_joint_angles)
+        panda.set_joint_angles(lst_joint_angles2)
+
+        panda.set_joint_angles(lst_joint_angles1)
         # rospy.sleep(2)
-        # panda.set_joint_angles(lst_joint_angles2)
+        panda.set_joint_angles(lst_joint_angles2)
         # rospy.sleep(2)
         panda.set_joint_angles(lst_joint_angles3)
-        rospy.sleep(2)
+        # rospy.sleep(2)
         break
 
     del panda
