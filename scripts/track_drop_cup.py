@@ -186,6 +186,7 @@ class CartesianPath:
 
     def tracking(self, cup_num):
         rospy.sleep(2)
+        prev_state = 0
         if cup_num == 1:
 
             if self.center_x < self.target_center_x:
@@ -205,11 +206,11 @@ class CartesianPath:
 
         if cup_num == 2:
             if self.center_x < self.target_center_x:
-                position_x_cartesian =  -1 * abs((self.center_x+15) - (self.target_center_x)) * 0.001262626
+                position_x_cartesian =  -1 * (abs((self.center_x+15) - (self.target_center_x)) + 15)* 0.001262626
             if self.center_x > self.target_center_x:
                 position_x_cartesian = abs((self.center_x) - (self.target_center_x)) *  0.001262626
             if self.center_y < self.target_center_y:
-                    position_y_cartesian = (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
+                    position_y_cartesian = (abs((self.center_y) - (self.target_center_y ))-169) * 0.001407407
             if self.center_y > self.target_center_y:
                 position_y_cartesian = -1 * (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
 
@@ -226,8 +227,14 @@ class CartesianPath:
                     position_y_cartesian = (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
                 if self.center_y > self.target_center_y:
                     position_y_cartesian = -1 * (abs((self.center_y) - (self.target_center_y))-169) * 0.001407407
+                if i == 1 and position_x_cartesian < 0.001:
+                    prev_state = 1
                 if i == 1 and position_x_cartesian > 0.01:
                     position_x_cartesian = -1*position_x_cartesian
+                if i == 1 and position_x_cartesian < 0.001 and prev_state != 1:
+                    break
+                    
+
 
                 self.hard_ee_cartesian_translation(position_y_cartesian,position_x_cartesian,0,5)
 
@@ -244,6 +251,7 @@ class CartesianPath:
         pub2.publish(gripper_var)
 
     def set_joint_angles(self, arg_list_joint_angles):
+        
 
         list_joint_values = self._group.get_current_joint_values()
         rospy.loginfo('\033[94m' + ">>> Current Joint Values:" + '\033[0m')
@@ -269,6 +277,7 @@ class CartesianPath:
         else:
             rospy.logerr(
                 '\033[94m' + ">>> set_joint_angles() Failed." + '\033[0m')
+        rospy.sleep(1)
 
         return flag_plan
                 
